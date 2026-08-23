@@ -56,7 +56,7 @@ jobs:
           script: |
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
-            docker pull ghcr.io/${{ github.repository_owner }}/pomodoro-timer:latest
+            docker pull ghcr.io/${{ steps.vars.outputs.owner_lower }}/pomodoro-timer:latest
 
             docker stop pomodoro-timer || true
             docker rm pomodoro-timer || true
