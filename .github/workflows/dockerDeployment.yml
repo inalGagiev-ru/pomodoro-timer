@@ -1,0 +1,60 @@
+name: First docker deployment
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code 
+        uses: actions/checkout@v4
+
+      #логинимс в GHCR
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          #github.actor - кто сделал коммит
+          username: ${{ github.actor }}
+          #встроенный токе гитхаба который может пушить и пуллить его добалять в сикреты ненужно, он вшит уже
+          password: ${{ secrets.GITHUB_TOKEN }} 
+
+      - name: Build and push Docker image
+        #этот акшен от докера сам почти все делает, тоесть
+        #Читает твой Dockerfile (из папки, указанной в context)
+        #Выполняет все инструкции (FROM, COPY, RUN и т.д.) — это и есть билд
+        #Если push: true, то сразу отправляет результат в registry
+        uses: docker/build-push-action@v5
+        with:
+          context: . #директория где у нас лежит докер файл для сборки
+          push: true #после сборки сразу пушим в registry
+          #repo_owner - владелец репозитория
+          #кароче эти теги это мы просто указываем метаданные для имейджа который будет залит в registry
+          tags: | #создаем 2 тега
+            ghcr.io/${{ github.repository_owner }}/pomodoro-timer:latest
+            ghcr.io/${{ github.repository_owner }}/pomodoro-timer:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+
+            docker pull ghcr.io/${{ github.repository_owner }}/pomodoro-timer:latest
+
+            docker stop pomodoro-timer || true
+            docker rm pomodoro-timer || true
+
+            docker run -d \
+              --name pomodoro-timer \
+              -p 8080:80 \
+              --restart unless-stopped \
+              ghcr.io/${{ github.repository_owner }}/pomodoro-timer:latest
