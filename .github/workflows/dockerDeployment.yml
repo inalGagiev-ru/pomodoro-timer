@@ -65,4 +65,4 @@ jobs:
               --name pomodoro-timer \
               -p 8080:80 \
               --restart unless-stopped \
-              ghcr.io/${{ github.repository_owner }}/pomodoro-timer:latest
+              ghcr.io/${{ steps.vars.outputs.owner_lower }}/pomodoro-timer:latest
