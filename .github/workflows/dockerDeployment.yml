@@ -32,7 +32,7 @@ jobs:
 
       - name: Build and push Docker image
         #этот акшен от докера сам почти все делает, тоесть
-        #Читает твой Dockerfile (из папки, указанной в context)
+        #Читает твой Dockerfile (  из папки, указанной в context)
         #Выполняет все инструкции (FROM, COPY, RUN и т.д.) — это и есть билд
         #Если push: true, то сразу отправляет результат в registry
         uses: docker/build-push-action@v5
